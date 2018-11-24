@@ -1,0 +1,18 @@
+
+GET         /                           controllers.Main.index
+
+# User management
+#GET         /createuser                 controllers.Main.createUserForm
+#POST        /user                       controllers.Main.createUser
+#POST        /currentuser/:userId        controllers.Main.currentUser(userId: java.util.UUID)
+
+
+#Part
+
+GET         /createpart                 controllers.PartController.createPart
+
+GET         /part/:id                 controllers.PartController.getPart(id: java.util.UUID)
+
+GET         /assets/*file               controllers.Assets.at(path = "/public", file)
+
+
