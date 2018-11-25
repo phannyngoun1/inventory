@@ -5,7 +5,7 @@ import java.util.UUID
 
 import akka.Done
 import com.dream.inventory.common.dao.BaseModel
-import com.dream.inventory.common.{BaseTracking, PartTracking, PartTrackingType, PartType}
+import com.dream.inventory.common.{PartTracking, AbstractPartTracking, PartTrackingType, PartType}
 import com.dream.inventory.utils.JsonFormats.singletonFormat
 import com.lightbend.lagom.scaladsl.persistence.PersistentEntity.ReplyType
 import com.lightbend.lagom.scaladsl.persistence.{AggregateEvent, AggregateEventTag, AggregateEventTagger}
@@ -87,7 +87,7 @@ case class InventoryDataModel(
   totalStdCost: Double = 0,
 
   costingLayers: List[CostLayerDataModel] = List.empty,
-  partTracking: List[BaseTracking] = List.empty
+  partTracking: List[PartTracking] = List.empty
 )
 
 object InventoryDataModel {
@@ -96,7 +96,7 @@ object InventoryDataModel {
 
 case class PartTrackingDataModel(
   locationId: UUID,
-  trackingValue: BaseTracking
+  trackingTracking: PartTracking
 )
 
 object PartTrackingDataModel {
@@ -148,6 +148,9 @@ case class PartDataModel (
 
   reorderLevels: List[PartReorderLevelDataModel] = List.empty,
 
+
+  inventory: Option[InventoryDataModel]  = None,
+
   modifiedBy: UUID,
 
   createdAt: Instant = Instant.now(),
@@ -156,10 +159,7 @@ case class PartDataModel (
 
   isActive: Boolean = true,
 
-  isDeleted: Boolean = false,
-
-  inventory: Option[InventoryDataModel]  = None
-
+  isDeleted: Boolean = false
 
 ) extends  BaseModel {
   def disable: Either[PartError, PartDataModel] = Right(copy(
@@ -185,7 +185,9 @@ case object GetPart extends PartCommand with ReplyType[Option[PartDataModel]] {
   implicit val format: Format[GetPart.type] = singletonFormat(GetPart)
 }
 
-case class CreatePart(part: PartDataModel) extends PartCommand with ReplyType[Done]
+case class CreatePart(
+  part: PartDataModel
+) extends PartCommand with ReplyType[Done]
 
 object CreatePart {
   implicit val format: Format[CreatePart] = Json.format

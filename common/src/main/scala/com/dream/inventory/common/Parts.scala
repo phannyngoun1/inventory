@@ -32,24 +32,24 @@ object PartType extends StringEnum[PartType] with StringPlayJsonValueEnum[PartTy
 }
 
 
-sealed abstract class PartTrackingType(val value: String, val name: String, val description: Option[String] = None) extends StringEnumEntry with ObjectType
+sealed abstract class PartTrackingType(val value: String, val name: String, abbr: String, val description: Option[String] = None) extends StringEnumEntry with ObjectType
 
 case object PartTrackingType extends StringEnum[PartTrackingType] with StringPlayJsonValueEnum[PartTrackingType] {
   override def values = findValues
 
-  case object Text extends PartTrackingType("Text", "Text")
+  case object Text extends PartTrackingType("Text", "Text", "Txt")
 
-  case object Date extends PartTrackingType("Date", "Date")
+  case object Date extends PartTrackingType("Date", "Date", "Date")
 
-  case object Number extends PartTrackingType("Number", "Number")
+  case object Number extends PartTrackingType("Number", "Number", "Nr")
 
-  case object SerialNumber extends PartTrackingType("SerialNumber", "Serial Number")
+  case object SerialNumber extends PartTrackingType("SerialNumber", "Serial Number", "SN(s)")
 
-  case object ExpirationDate extends PartTrackingType("ExpirationDate", "Expiration Date")
+  case object ExpirationDate extends PartTrackingType("ExpirationDate", "Expiration Date", "ExpDate")
 
-  case object RevisionLevel extends PartTrackingType("RevisionLevel", "Revision Level")
+  case object RevisionLevel extends PartTrackingType("RevisionLevel", "Revision Level", "Rev#")
 
-  case object LotNumber extends PartTrackingType("LotNumber", "Lot Number")
+  case object LotNumber extends PartTrackingType("LotNumber", "Lot Number", "Lot#")
 
 
 }
@@ -65,15 +65,15 @@ object PartTrackingType extends Enumeration {
 
 
 
-sealed trait BaseTracking {
+sealed trait PartTracking {
   def toString: String
 }
 
-object BaseTracking {
-  implicit val formats: OFormat[BaseTracking] = derived.flat.oformat((__ \ "type").format[String])
+object PartTracking {
+  implicit val formats: OFormat[PartTracking] = derived.flat.oformat((__ \ "type").format[String])
 }
 
-sealed abstract class PartTracking[T] extends BaseTracking{
+sealed abstract class AbstractPartTracking[T] extends PartTracking{
   def value: T
   def trackingType: PartTrackingType
 
@@ -85,7 +85,7 @@ sealed abstract class PartTracking[T] extends BaseTracking{
 }
 
 
-case class TrackingBySerial(override val value: String) extends PartTracking[String] {
+case class TrackingBySerial(override val value: String) extends AbstractPartTracking[String] {
   override val trackingType = PartTrackingType.Text
 }
 
@@ -94,7 +94,7 @@ object TrackingBySerial {
 }
 
 
-case class TrackingByExpiryDate(override val value: Instant) extends PartTracking[Instant] {
+case class TrackingByExpiryDate(override val value: Instant) extends AbstractPartTracking[Instant] {
   override val trackingType = PartTrackingType.Date
 }
 
@@ -103,7 +103,7 @@ object TrackingByExpiryDate {
 }
 
 
-case class TrackingByLot(override val value: String) extends PartTracking[String] {
+case class TrackingByLot(override val value: String) extends AbstractPartTracking[String] {
   override val trackingType = PartTrackingType.Text
 }
 
@@ -112,10 +112,12 @@ object TrackingByLot {
 }
 
 
-case class TrackingBySerials(override val value: List[Map[String, Boolean]]) extends PartTracking[List[Map[String, Boolean]]] {
+case class TrackingBySerials(override val value: List[Map[String, Boolean]]) extends AbstractPartTracking[List[Map[String, Boolean]]] {
   override val trackingType = PartTrackingType.SerialNumber
 }
 
 object PartTrackingDataModel {
   implicit val format: Format[TrackingBySerials] = Json.format
 }
+
+
