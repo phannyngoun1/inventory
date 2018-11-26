@@ -34,11 +34,13 @@ object Part {
 
 
 case class PartBasicInfo(
+  partId: UUID,
   partNr: String,
   description: String,
   partType: PartType,
   upc: Option[String] = None,
-  uomId: Option[String] = None
+  uomId: Option[String] = None,
+  creator: UUID
 )
 
 
@@ -53,7 +55,6 @@ case class PartTrackingMethod(
 object PartTrackingMethod {
   implicit val format: Format[PartTrackingMethod] = Json.format
 }
-
 
 case class InitialInventory(
   locationId: UUID,
@@ -76,4 +77,16 @@ case class DefaultVendor(
 
 object DefaultVendor {
   implicit val format: Format[DefaultVendor] = Json.format
+}
+
+case class DefaultAccount(
+  assetAcctId: Option[UUID],
+  cogsAcctId: Option[UUID],
+  adjustmentAcctId: Option[UUID],
+  scrapAcctId: Option[UUID]
+)
+
+
+object DefaultAccount {
+  implicit val format: Format[DefaultAccount] = Json.format
 }

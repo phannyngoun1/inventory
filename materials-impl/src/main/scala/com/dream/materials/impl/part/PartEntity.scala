@@ -34,7 +34,10 @@ class PartEntity extends PersistentEntity {
 
   private def notCreated = {
     Actions().onCommand[CreatePart, Done] {
-      case (CreatePart(part), ctx, _) =>
+      case (CreatePart(basicInfo,partTrackingMethod, initialInventory, defaultLocation, defaultVendor, defaultAccount ), ctx, _) =>
+
+
+
         ctx.thenPersist(PartCreated(part))(_ => ctx.reply(Done))
     }.onEvent {
       case (PartCreated(part), _) => Some(part)

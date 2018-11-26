@@ -5,6 +5,7 @@ import java.util.UUID
 import akka.actor.ActorSystem
 import akka.testkit.TestKit
 import com.dream.inventory.common.PartType
+import com.dream.materials.api.part.PartBasicInfo
 import com.dream.materials.impl.part._
 import com.lightbend.lagom.scaladsl.playjson.JsonSerializerRegistry
 import com.lightbend.lagom.scaladsl.testkit.PersistentEntityTestDriver
@@ -24,6 +25,12 @@ class PartEntitySpec extends WordSpec with Matchers with BeforeAndAfterAll with 
     modifiedBy = creator
   )
 
+  private val partBasicInfo = PartBasicInfo(
+    partNr = "Part 001",
+    description = "Part 001",
+    partType = PartType.Inventory
+  )
+
   override def afterAll = {
     TestKit.shutdownActorSystem(system)
   }
@@ -39,7 +46,7 @@ class PartEntitySpec extends WordSpec with Matchers with BeforeAndAfterAll with 
 
   "The part entity" should {
     "allow creating an part" in withDriver { driver =>
-      val outcome = driver.run(CreatePart(pPart))
+      val outcome = driver.run(CreatePart(basicInfo = partBasicInfo))
       outcome.events should contain only PartCreated(pPart)
       outcome.state should ===(Some(pPart))
     }

@@ -5,8 +5,9 @@ import java.util.UUID
 
 import akka.Done
 import com.dream.inventory.common.dao.BaseModel
-import com.dream.inventory.common.{PartTracking, AbstractPartTracking, PartTrackingType, PartType}
+import com.dream.inventory.common.{AbstractPartTracking, PartTracking, PartTrackingType, PartType}
 import com.dream.inventory.utils.JsonFormats.singletonFormat
+import com.dream.materials.api.part.{PartTrackingMethod, _}
 import com.lightbend.lagom.scaladsl.persistence.PersistentEntity.ReplyType
 import com.lightbend.lagom.scaladsl.persistence.{AggregateEvent, AggregateEventTag, AggregateEventTagger}
 import play.api.libs.json.{Format, Json}
@@ -49,7 +50,7 @@ object PartSizeWeightDataModel {
 
 case class PartTrackingMethodDataModel(
   partTrackingType: PartTrackingType,
-  nextValue: String,
+  nextValue: Option[String],
   isPrimary: Boolean
 )
 
@@ -126,6 +127,10 @@ case class PartDataModel (
 
   partType: PartType,
 
+  upc: Option[String] = None,
+
+  uomId: Option[String] = None,
+
   abcCode: Option[String] = None,
 
   stCost: Option[Float] = None,
@@ -162,6 +167,21 @@ case class PartDataModel (
   isDeleted: Boolean = false
 
 ) extends  BaseModel {
+
+
+  def count[A](xs: List[A]): List[(A, Int)] = xs.distinct.map(x => (x, xs.count(_ == x)))
+
+  def withPartTracking(partTrackingMethods: List[PartTrackingMethodDataModel]): Either[PartError, PartDataModel] = {
+
+    Right(copy(trackingMethod = partTrackingMethods))
+  }
+
+
+
+
+  def withDefaultLocation(defaultLocations: List[PartDefaultLocationDataModel]): Either[PartError, PartDataModel] =
+    Right(copy(defaultLocations = defaultLocations))
+
   def disable: Either[PartError, PartDataModel] = Right(copy(
     isActive = false
   ))
@@ -175,7 +195,16 @@ object PartDataModel {
 
   implicit val format: Format[PartDataModel] = Json.format
 
-
+  def create(partBasicInfo: PartBasicInfo): PartDataModel = PartDataModel(
+    id = partBasicInfo.partId,
+    creator = partBasicInfo.creator,
+    partNr =  partBasicInfo.partNr,
+    description = partBasicInfo.description,
+    partType = partBasicInfo.partType,
+    upc = partBasicInfo.upc,
+    uomId = partBasicInfo.uomId,
+    modifiedBy = partBasicInfo.creator
+  )
 }
 
 /** *************************Command *****************************/
@@ -186,8 +215,15 @@ case object GetPart extends PartCommand with ReplyType[Option[PartDataModel]] {
 }
 
 case class CreatePart(
-  part: PartDataModel
+
+  basicInfo: PartBasicInfo,
+  partTrackingMethods: List[PartTrackingMethod] = List.empty,
+  initialInventory: Option[InitialInventory] = None,
+  defaultLocation: List[UUID] = List.empty,
+  defaultVendor: Option[DefaultVendor] = None,
+  defaultAccount: Option[DefaultAccount] = None,
 ) extends PartCommand with ReplyType[Done]
+
 
 object CreatePart {
   implicit val format: Format[CreatePart] = Json.format
