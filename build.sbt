@@ -46,6 +46,7 @@ lazy val common = (project in file("common"))
     libraryDependencies ++= Seq(
       lagomScaladslApi,
       lagomScaladslServer % Optional,
+      cats,
       enumeratum,
       enumeratumPlay,
       scalaTest,
@@ -100,7 +101,6 @@ lazy val `setting-impl` = (project in file("setting-impl"))
       mysqlConnectJava,
       lagomScaladslPersistenceCassandra,
       lagomScaladslPersistenceJdbc,
-      cats,
       macwire,
       scalaTest
     )

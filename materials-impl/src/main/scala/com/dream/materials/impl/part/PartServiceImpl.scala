@@ -5,6 +5,7 @@ import java.util.UUID
 import akka.NotUsed
 import com.datastax.driver.core.utils.UUIDs
 import com.dream.inventory.security.ServerSecurity._
+import com.dream.inventory.validate.Validation
 import com.dream.materials.api.part.PartService
 import com.dream.materials._
 import com.dream.materials.impl.MaterialServiceImpl
@@ -12,14 +13,19 @@ import com.lightbend.lagom.scaladsl.api.ServiceCall
 import com.lightbend.lagom.scaladsl.api.transport.{Forbidden, NotFound}
 import com.lightbend.lagom.scaladsl.server.ServerServiceCall
 
-trait PartServiceImpl extends PartService {
+trait PartServiceImpl extends PartService with Validation{
   this: MaterialServiceImpl =>
+
+  import PartValidation._
 
   override def createPart = authenticated(userId => ServerServiceCall { part =>
 
     if (userId != part.creator) {
       throw Forbidden("User " + userId + " can't created an item on behalf of " + part.creator)
     }
+
+
+
 
     val partId = UUIDs.timeBased()
     val pPart = PartDataModel(
@@ -30,6 +36,10 @@ trait PartServiceImpl extends PartService {
       partType = part.partType,
       modifiedBy = part.creator
     )
+
+//    validateRequest(pPart).fold()
+
+
     entityRef(partId).ask(CreatePart(pPart)).map { _ =>
       part
     }
