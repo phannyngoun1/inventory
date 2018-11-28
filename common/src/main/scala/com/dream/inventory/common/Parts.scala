@@ -65,15 +65,15 @@ object PartTrackingType extends Enumeration {
 
 
 
-sealed trait PartTracking {
+sealed trait PartTrackingValue {
   def toString: String
 }
 
-object PartTracking {
-  implicit val formats: OFormat[PartTracking] = derived.flat.oformat((__ \ "type").format[String])
+object PartTrackingValue {
+  implicit val formats: OFormat[PartTrackingValue] = derived.flat.oformat((__ \ "type").format[String])
 }
 
-sealed abstract class AbstractPartTracking[T] extends PartTracking{
+sealed abstract class AbstractPartTracking[T] extends PartTrackingValue{
   def value: T
   def trackingType: PartTrackingType
 

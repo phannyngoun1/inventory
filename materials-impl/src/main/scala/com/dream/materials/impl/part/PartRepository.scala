@@ -28,8 +28,8 @@ private[impl] class PartRepository(val profile: JdbcProfile, val db: JdbcProfile
     partNr = eventElement.event.part.partNr,
     description = eventElement.event.part.description,
     partType = eventElement.event.part.partType.toString,
-    creator = eventElement.event.part.creator.toString,
-    modifiedBy = eventElement.event.part.creator.toString
+    creator = eventElement.event.part.auditData.creator.toString,
+    modifiedBy = eventElement.event.part.auditData.creator.toString
   ))
 }
 

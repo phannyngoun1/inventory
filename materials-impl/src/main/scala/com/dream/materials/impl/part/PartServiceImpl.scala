@@ -4,19 +4,22 @@ import java.util.UUID
 
 import akka.NotUsed
 import com.datastax.driver.core.utils.UUIDs
+import com.dream.inventory.common.PartType
 import com.dream.inventory.security.ServerSecurity._
 import com.dream.inventory.validate.Validation
-import com.dream.materials.api.part.PartService
 import com.dream.materials._
+import com.dream.materials.api.part.{CreatePartRequest, PartBasicInfo, PartService}
 import com.dream.materials.impl.MaterialServiceImpl
 import com.lightbend.lagom.scaladsl.api.ServiceCall
-import com.lightbend.lagom.scaladsl.api.transport.{Forbidden, NotFound}
+import com.lightbend.lagom.scaladsl.api.transport.{BadRequest, Forbidden, NotFound}
 import com.lightbend.lagom.scaladsl.server.ServerServiceCall
+import PartValidation._
+import com.dream.inventory.common.dao.AuditData
 
-trait PartServiceImpl extends PartService with Validation{
+import scala.concurrent.Future
+
+trait PartServiceImpl extends PartService with Validation {
   this: MaterialServiceImpl =>
-
-  import PartValidation._
 
   override def createPart = authenticated(userId => ServerServiceCall { part =>
 
@@ -25,24 +28,33 @@ trait PartServiceImpl extends PartService with Validation{
     }
 
 
-
-
     val partId = UUIDs.timeBased()
     val pPart = PartDataModel(
       id = partId,
-      creator = part.creator,
+
       partNr = part.partNr,
       description = part.description,
       partType = part.partType,
-      modifiedBy = part.creator
+      auditData = AuditData(
+        creator = part.creator,
+        modifiedBy = part.creator
+      )
     )
 
-//    validateRequest(pPart).fold()
+    //    validateRequest(pPart).fold()
 
 
-    entityRef(partId).ask(CreatePart(pPart)).map { _ =>
-      part
-    }
+    val createPartRequest = CreatePartRequest(
+      partBasicInfo = PartBasicInfo(
+        partNr = "aa",
+        description = "aa",
+        partType = PartType.Inventory,
+        creator = userId
+      )
+    )
+
+   validate(createPartRequest).fold(error => throw BadRequest("validation check"), fa => print(fa.partBasicInfo.partNr))
+    Future.successful(part)
   })
 
   override def getPart(uUID: UUID): ServiceCall[NotUsed, api.part.Part] = authenticated(_ => ServerServiceCall { _ => {
@@ -61,12 +73,12 @@ trait PartServiceImpl extends PartService with Validation{
   private def convertPart(part: PartDataModel) =
     api.part.Part(
       id = Some(part.id),
-      creator = part.creator,
+      creator = part.auditData.creator,
       partNr = part.partNr,
       description = part.description,
       partType = part.partType,
-      modifiedBy = part.modifiedBy,
-      createdAt = Some(part.createdAt),
-      modifiedAt = part.modifiedAt
+      modifiedBy = part.auditData.modifiedBy,
+      createdAt = Some(part.auditData.createdAt),
+      modifiedAt = part.auditData.modifiedAt
     )
 }

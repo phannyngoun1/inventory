@@ -4,8 +4,8 @@ import java.time.Instant
 import java.util.UUID
 
 import akka.Done
-import com.dream.inventory.common.dao.BaseModel
-import com.dream.inventory.common.{AbstractPartTracking, PartTracking, PartTrackingType, PartType}
+import com.dream.inventory.common.dao.{AuditData, BaseModel, RecordStatus}
+import com.dream.inventory.common.{PartTrackingValue, PartTrackingType, PartType}
 import com.dream.inventory.utils.JsonFormats.singletonFormat
 import com.dream.materials.api.part.{PartTrackingMethod, _}
 import com.lightbend.lagom.scaladsl.persistence.PersistentEntity.ReplyType
@@ -75,11 +75,11 @@ case class InventoryDataModel(
   allocated: Float = 0,
   notAvailable: Float = 0,
   dropShip: Float = 0,
-  committed: Float = 0 ,
+  committed: Float = 0,
   shot: Float = 0,
-  onOrder: Float =0,
-  availableToPick: Float =0,
-  availableForSale: Float =0,
+  onOrder: Float = 0,
+  availableToPick: Float = 0,
+  availableForSale: Float = 0,
 
   avgCost: Double = 0,
   totalAvgCost: Double = 0,
@@ -88,8 +88,19 @@ case class InventoryDataModel(
   totalStdCost: Double = 0,
 
   costingLayers: List[CostLayerDataModel] = List.empty,
-  partTracking: List[PartTracking] = List.empty
-)
+  partTracking: List[PartTrackingDataModel] = List.empty
+) {
+  def receiving(qty: Float, unitCost: Double, date: Instant , f: InventoryDataModel => Boolean): InventoryDataModel = {
+    copy(
+      onHand = onHand + qty,
+      availableForSale = availableForSale + qty,
+      availableToPick = availableToPick + qty,
+      totalAvgCost = totalAvgCost + (qty * unitCost),
+      avgCost = (totalAvgCost + (qty * unitCost)) / (onHand + qty) ,
+      costingLayers =   CostLayerDataModel(date, qty, unitCost, qty * unitCost) ::  costingLayers
+    )
+  }
+}
 
 object InventoryDataModel {
   implicit val format: Format[InventoryDataModel] = Json.format
@@ -97,7 +108,8 @@ object InventoryDataModel {
 
 case class PartTrackingDataModel(
   locationId: UUID,
-  trackingTracking: PartTracking
+  qty: Float,
+  trackingTracking: PartTrackingValue
 )
 
 object PartTrackingDataModel {
@@ -108,18 +120,17 @@ case class CostLayerDataModel(
   date: Instant,
   qty: Float,
   unitCost: Double,
-  totalCost: Double
+  totalCost: Double,
+  committed: Boolean = false
 )
 
 object CostLayerDataModel {
   implicit val format: Format[CostLayerDataModel] = Json.format
 }
 
-case class PartDataModel (
+case class PartDataModel(
 
   id: UUID,
-
-  creator: UUID,
 
   partNr: String,
 
@@ -147,47 +158,41 @@ case class PartDataModel (
 
   accounts: Option[PartAcctDataModel] = None,
 
-  sizeWeight: Option[PartSizeWeightDataModel] = None,
+   sizeWeight: Option[PartSizeWeightDataModel] = None,
 
   trackingMethod: List[PartTrackingMethodDataModel] = List.empty,
 
   reorderLevels: List[PartReorderLevelDataModel] = List.empty,
 
-
   inventory: Option[InventoryDataModel]  = None,
 
-  modifiedBy: UUID,
+  auditData: AuditData,
 
-  createdAt: Instant = Instant.now(),
+  recordStatus: RecordStatus = RecordStatus()
 
-  modifiedAt: Option[Instant] = None,
+) extends BaseModel {
 
-  isActive: Boolean = true,
+  def initialInventory(inventories: InitialInventory): Either[PartError, PartDataModel] = {
 
-  isDeleted: Boolean = false
+    if(!inventory.isEmpty)
+      Left(DefaultPartError("Inventory is already initial"))
+    else {
 
-) extends  BaseModel {
+    val inv = InventoryDataModel(
 
+    )
 
-  def count[A](xs: List[A]): List[(A, Int)] = xs.distinct.map(x => (x, xs.count(_ == x)))
+      Right(copy())
+    }
 
-  def withPartTracking(partTrackingMethods: List[PartTrackingMethodDataModel]): Either[PartError, PartDataModel] = {
-
-    Right(copy(trackingMethod = partTrackingMethods))
   }
 
-
-
-
-  def withDefaultLocation(defaultLocations: List[PartDefaultLocationDataModel]): Either[PartError, PartDataModel] =
-    Right(copy(defaultLocations = defaultLocations))
-
   def disable: Either[PartError, PartDataModel] = Right(copy(
-    isActive = false
+    recordStatus = recordStatus.copy(isActive = false)
   ))
 
-  def enable: Either[PartError, PartDataModel] =  Right(copy(
-    isActive = true
+  def enable: Either[PartError, PartDataModel] = Right(copy(
+    recordStatus = recordStatus.copy(isActive = true)
   ))
 }
 
@@ -195,16 +200,28 @@ object PartDataModel {
 
   implicit val format: Format[PartDataModel] = Json.format
 
-  def create(partBasicInfo: PartBasicInfo): PartDataModel = PartDataModel(
-    id = partBasicInfo.partId,
-    creator = partBasicInfo.creator,
-    partNr =  partBasicInfo.partNr,
-    description = partBasicInfo.description,
-    partType = partBasicInfo.partType,
-    upc = partBasicInfo.upc,
-    uomId = partBasicInfo.uomId,
-    modifiedBy = partBasicInfo.creator
-  )
+  def create(
+    id: UUID, partBasicInfo: PartBasicInfo,
+    partTrackingMethods: List[PartTrackingMethod] = List.empty,
+    initialInventory: Option[InitialInventory] = None,
+    defaultLocation: List[UUID] = List.empty,
+    defaultVendor: Option[DefaultVendor] = None,
+    defaultAccount: Option[DefaultAccount] = None
+  ): PartDataModel =
+    PartDataModel(
+      id = id,
+      partNr = partBasicInfo.partNr,
+      description = partBasicInfo.description,
+      partType = partBasicInfo.partType,
+      upc = partBasicInfo.upc,
+      uomId = partBasicInfo.uomId,
+      auditData = AuditData(
+        creator = partBasicInfo.creator,
+        modifiedBy = partBasicInfo.creator
+      )
+
+
+    )
 }
 
 /** *************************Command *****************************/
@@ -214,15 +231,7 @@ case object GetPart extends PartCommand with ReplyType[Option[PartDataModel]] {
   implicit val format: Format[GetPart.type] = singletonFormat(GetPart)
 }
 
-case class CreatePart(
-
-  basicInfo: PartBasicInfo,
-  partTrackingMethods: List[PartTrackingMethod] = List.empty,
-  initialInventory: Option[InitialInventory] = None,
-  defaultLocation: List[UUID] = List.empty,
-  defaultVendor: Option[DefaultVendor] = None,
-  defaultAccount: Option[DefaultAccount] = None,
-) extends PartCommand with ReplyType[Done]
+case class CreatePart(dataModel: PartDataModel) extends PartCommand with ReplyType[Done]
 
 
 object CreatePart {

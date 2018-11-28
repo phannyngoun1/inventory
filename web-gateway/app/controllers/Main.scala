@@ -9,7 +9,9 @@ class Main(userService: UserService, controllerComponents: ControllerComponents)
   (implicit ec: ExecutionContext)
   extends AbstractAuctionController(controllerComponents) {
 
-  def index = Action.async { implicit rh =>
+
+
+  def index1 = Action.async { implicit rh =>
 
     requireUser(userId => for {
       users <- userService.getUsers.invoke()

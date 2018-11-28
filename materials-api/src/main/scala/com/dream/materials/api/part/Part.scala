@@ -3,7 +3,7 @@ package com.dream.materials.api.part
 import java.time.Instant
 import java.util.UUID
 
-import com.dream.inventory.common.{BaseObject, PartTrackingType, PartType}
+import com.dream.inventory.common.{BaseObject, PartTrackingType, PartTrackingValue, PartType}
 import play.api.libs.json.{Format, Json}
 
 case class Part(
@@ -32,9 +32,19 @@ object Part {
 }
 
 
+case class CreatePartRequest(
+  partBasicInfo: PartBasicInfo,
+  partTrackingMethod: Option[PartTrackingMethod] = None,
+  initialInventory: Option[InitialInventory] = None,
+  defaultVendor: Option[DefaultVendor]= None,
+  defaultAccount: Option[DefaultAccount] = None
+)
+
+object CreatePartRequest{
+  implicit val format: Format[CreatePartRequest] = Json.format
+}
 
 case class PartBasicInfo(
-  partId: UUID,
   partNr: String,
   description: String,
   partType: PartType,
@@ -43,6 +53,9 @@ case class PartBasicInfo(
   creator: UUID
 )
 
+object PartBasicInfo {
+  implicit val format: Format[PartBasicInfo] = Json.format
+}
 
 
 case class PartTrackingMethod(
@@ -60,7 +73,8 @@ case class InitialInventory(
   locationId: UUID,
   quantity: Float,
   uomUd: UUID,
-  date: Instant
+  date: Instant,
+  partTracking: List[PartTrackingValue] = List.empty
 )
 
 object InitialInventory {

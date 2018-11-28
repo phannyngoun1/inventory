@@ -16,19 +16,13 @@ class PartEntitySpec extends WordSpec with Matchers with BeforeAndAfterAll with 
   private val system = ActorSystem("test", JsonSerializerRegistry.actorSystemSetupFor(MaterialSerializerRegistry))
   private val partId = UUID.randomUUID
   private val creator = UUID.fromString("b0a6a6a0-ecbb-43fa-b4e0-6e7272202402")
-  private val pPart = PartDataModel(
-    id = partId,
-    creator = creator,
-    partNr = "part 001",
-    description = "part 001",
-    partType = PartType.Inventory,
-    modifiedBy = creator
-  )
+
 
   private val partBasicInfo = PartBasicInfo(
     partNr = "Part 001",
     description = "Part 001",
-    partType = PartType.Inventory
+    partType = PartType.Inventory,
+    creator = UUID.randomUUID()
   )
 
   override def afterAll = {
@@ -46,9 +40,13 @@ class PartEntitySpec extends WordSpec with Matchers with BeforeAndAfterAll with 
 
   "The part entity" should {
     "allow creating an part" in withDriver { driver =>
-      val outcome = driver.run(CreatePart(basicInfo = partBasicInfo))
-      outcome.events should contain only PartCreated(pPart)
-      outcome.state should ===(Some(pPart))
+
+      val partData = PartDataModel.create(partId, partBasicInfo = partBasicInfo)
+
+      val outcome = driver.run(CreatePart(partData))
+      outcome.events should contain only PartCreated(partData)
+      outcome.state should ===(Some(partData))
+
     }
   }
 }
