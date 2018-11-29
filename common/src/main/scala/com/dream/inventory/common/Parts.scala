@@ -66,7 +66,10 @@ object PartTrackingType extends Enumeration {
 
 
 sealed trait PartTrackingValue {
+
   def toString: String
+  def trackingType: PartTrackingType
+
 }
 
 object PartTrackingValue {
@@ -75,7 +78,6 @@ object PartTrackingValue {
 
 sealed abstract class AbstractPartTracking[T] extends PartTrackingValue{
   def value: T
-  def trackingType: PartTrackingType
 
   override def toString: String = value match {
     case v: String => v
@@ -85,13 +87,13 @@ sealed abstract class AbstractPartTracking[T] extends PartTrackingValue{
 }
 
 
-case class TrackingBySerial(override val value: String) extends AbstractPartTracking[String] {
-  override val trackingType = PartTrackingType.Text
-}
-
-object TrackingBySerial {
-  implicit val format: Format[TrackingBySerial] = Json.format
-}
+//case class TrackingBySerial(override val value: String) extends AbstractPartTracking[String] {
+//  override val trackingType = PartTrackingType.Text
+//}
+//
+//object TrackingBySerial {
+//  implicit val format: Format[TrackingBySerial] = Json.format
+//}
 
 
 case class TrackingByExpiryDate(override val value: Instant) extends AbstractPartTracking[Instant] {
@@ -112,7 +114,7 @@ object TrackingByLot {
 }
 
 
-case class TrackingBySerials(override val value: List[Map[String, Boolean]]) extends AbstractPartTracking[List[Map[String, Boolean]]] {
+case class TrackingBySerials(override val value: List[String]) extends AbstractPartTracking[List[String]] {
   override val trackingType = PartTrackingType.SerialNumber
 }
 

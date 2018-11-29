@@ -4,8 +4,8 @@ import java.time.Instant
 import java.util.UUID
 
 import akka.Done
+import com.dream.inventory.common._
 import com.dream.inventory.common.dao.{AuditData, BaseModel, RecordStatus}
-import com.dream.inventory.common.{PartTrackingValue, PartTrackingType, PartType}
 import com.dream.inventory.utils.JsonFormats.singletonFormat
 import com.dream.materials.api.part.{PartTrackingMethod, _}
 import com.lightbend.lagom.scaladsl.persistence.PersistentEntity.ReplyType
@@ -90,17 +90,53 @@ case class InventoryDataModel(
   costingLayers: List[CostLayerDataModel] = List.empty,
   partTracking: List[PartTrackingDataModel] = List.empty
 ) {
-  def receiving(qty: Float, unitCost: Double, date: Instant , f: InventoryDataModel => Boolean): InventoryDataModel = {
+  def receiving(qty: Float, unitCost: Double, date: Instant, partTracking: List[PartTrackingDataModel], validate: InventoryDataModel => Boolean): InventoryDataModel = {
+
     copy(
       onHand = onHand + qty,
       availableForSale = availableForSale + qty,
       availableToPick = availableToPick + qty,
       totalAvgCost = totalAvgCost + (qty * unitCost),
-      avgCost = (totalAvgCost + (qty * unitCost)) / (onHand + qty) ,
-      costingLayers =   CostLayerDataModel(date, qty, unitCost, qty * unitCost) ::  costingLayers
+      avgCost = (totalAvgCost + (qty * unitCost)) / (onHand + qty),
+      costingLayers = CostLayerDataModel(date, qty, unitCost, qty * unitCost) :: costingLayers,
+      partTracking = addToTracking(partTracking)
+    )
+  }
+
+  private def addToTracking(newPartTracking: List[PartTrackingDataModel]): List[PartTrackingDataModel] = {
+
+    val all = List.concat(partTracking, newPartTracking)
+
+    List.concat(
+      all.filter(_.trackingTrackingValues.exists(_.trackingType == PartTrackingType.SerialNumber))
+        .groupBy(f => (f.locationId, f.trackingTrackingValues.filter(_.trackingType != PartTrackingType.SerialNumber).sorted))
+        .map(m => PartTrackingDataModel(
+          locationId = m._1._1,
+          qty = m._2.reduce(_.qty + _.qty),
+          trackingTrackingValues = mergeSerialTrackingValues(m._2.map(_.trackingTrackingValues.filter(_.trackingType != PartTrackingType.SerialNumber)).reduce(List.concat(_, _))) :: m._1._2
+        )).toList,
+      all.filter(_.trackingTrackingValues.exists(_.trackingType != PartTrackingType.SerialNumber))
+        .groupBy(f => (f.locationId, f.trackingTrackingValues.sorted))
+        .map(m => PartTrackingDataModel(
+          locationId = m._1._1,
+          qty = m._2.reduce(_.qty + _.qty),
+          trackingTrackingValues = m._1._2
+        )).toList
+    )
+  }
+
+  private def mergeSerialTrackingValues(values: List[PartTrackingValue]): PartTrackingValue = {
+
+    TrackingBySerials(
+      values.map {
+        _ match {
+          case v: TrackingBySerials => v.value
+        }
+      }.reduce(List.concat(_, _))
     )
   }
 }
+
 
 object InventoryDataModel {
   implicit val format: Format[InventoryDataModel] = Json.format
@@ -109,7 +145,7 @@ object InventoryDataModel {
 case class PartTrackingDataModel(
   locationId: UUID,
   qty: Float,
-  trackingTracking: PartTrackingValue
+  trackingTrackingValues: List[PartTrackingValue]
 )
 
 object PartTrackingDataModel {
@@ -158,13 +194,13 @@ case class PartDataModel(
 
   accounts: Option[PartAcctDataModel] = None,
 
-   sizeWeight: Option[PartSizeWeightDataModel] = None,
+  sizeWeight: Option[PartSizeWeightDataModel] = None,
 
   trackingMethod: List[PartTrackingMethodDataModel] = List.empty,
 
   reorderLevels: List[PartReorderLevelDataModel] = List.empty,
 
-  inventory: Option[InventoryDataModel]  = None,
+  inventory: Option[InventoryDataModel] = None,
 
   auditData: AuditData,
 
@@ -174,13 +210,13 @@ case class PartDataModel(
 
   def initialInventory(inventories: InitialInventory): Either[PartError, PartDataModel] = {
 
-    if(!inventory.isEmpty)
+    if (!inventory.isEmpty)
       Left(DefaultPartError("Inventory is already initial"))
     else {
 
-    val inv = InventoryDataModel(
+      val inv = InventoryDataModel(
 
-    )
+      )
 
       Right(copy())
     }

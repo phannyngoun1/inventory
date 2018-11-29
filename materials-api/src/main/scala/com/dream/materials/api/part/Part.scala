@@ -57,7 +57,6 @@ object PartBasicInfo {
   implicit val format: Format[PartBasicInfo] = Json.format
 }
 
-
 case class PartTrackingMethod(
   partTrackingType: PartTrackingType,
   nextValue: Option[String] = None,
