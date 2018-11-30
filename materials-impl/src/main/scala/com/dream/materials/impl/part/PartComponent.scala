@@ -41,7 +41,6 @@ trait PartComponent extends ComponentSupport with PartComponentSupport {
     deleted: Boolean = false
   ) extends Record with SoftDeletableRecord with AuditRecord
 
-
   case class PartAcctRecord(
     id: String,
     partId: String,

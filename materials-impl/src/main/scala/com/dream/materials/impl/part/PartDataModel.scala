@@ -4,6 +4,7 @@ import java.time.Instant
 import java.util.UUID
 
 import akka.Done
+import com.dream.inventory.common.Decorator._
 import com.dream.inventory.common._
 import com.dream.inventory.common.dao.{AuditData, BaseModel, RecordStatus}
 import com.dream.inventory.utils.JsonFormats.singletonFormat
@@ -137,7 +138,6 @@ case class InventoryDataModel(
   }
 }
 
-
 object InventoryDataModel {
   implicit val format: Format[InventoryDataModel] = Json.format
 }
@@ -208,19 +208,23 @@ case class PartDataModel(
 
 ) extends BaseModel {
 
-  def initialInventory(inventories: InitialInventory): Either[PartError, PartDataModel] = {
+  def withTrackingMethod(partTrackingMethods: List[PartTrackingMethod]): Either[PartError, PartDataModel] = {
+    Right(copy(trackingMethod = partTrackingMethods.map(t => PartTrackingMethodDataModel(t.partTrackingType, t.nextValue, t.isPrimary))))
+  }
+
+  def withInitialInventory(pInventory: InitialInventory): Either[PartError, PartDataModel] = {
 
     if (!inventory.isEmpty)
       Left(DefaultPartError("Inventory is already initial"))
     else {
-
-      val inv = InventoryDataModel(
-
-      )
-
-      Right(copy())
+      Right(copy(inventory = inventory.map(_.receiving(
+      pInventory.qty,
+      unitCost = pInventory.unitCost,
+      date = pInventory.date,
+      partTracking = List(PartTrackingDataModel(pInventory.locationId, pInventory.qty, pInventory.partTrackingValue)),
+      { _ => true }
+      ))))
     }
-
   }
 
   def disable: Either[PartError, PartDataModel] = Right(copy(
@@ -243,8 +247,8 @@ object PartDataModel {
     defaultLocation: List[UUID] = List.empty,
     defaultVendor: Option[DefaultVendor] = None,
     defaultAccount: Option[DefaultAccount] = None
-  ): PartDataModel =
-    PartDataModel(
+  ): PartDataModel = {
+    val part = PartDataModel(
       id = id,
       partNr = partBasicInfo.partNr,
       description = partBasicInfo.description,
@@ -255,9 +259,20 @@ object PartDataModel {
         creator = partBasicInfo.creator,
         modifiedBy = partBasicInfo.creator
       )
-
-
     )
+
+    part.withTrackingMethod(partTrackingMethods).toObjOrThrow
+      .whenDefined(initialInventory)((init, part) =>  part.withInitialInventory(init).toObjOrThrow)
+      .whenDefined(defaultAccount)( (_, part) => part.copy(accounts = defaultAccount.map(f =>
+        PartAcctDataModel(
+          assetAccountId = f.adjustmentAcctId,
+          cosgsAccountId = f.cogsAcctId,
+          adjustmentAccountId =  f.adjustmentAcctId,
+          scrapAccountId = f.scrapAcctId)))
+      )
+      .
+
+  }
 }
 
 /** *************************Command *****************************/
@@ -311,6 +326,6 @@ case object PartEnabled extends PartEvent {
 
 /** *************************Error *****************************/
 
-sealed abstract class PartError(val message: String)
+sealed abstract class PartError(val message: String) extends DataError
 
 case class DefaultPartError(override val message: String) extends PartError(message)

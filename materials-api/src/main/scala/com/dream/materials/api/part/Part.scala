@@ -70,10 +70,11 @@ object PartTrackingMethod {
 
 case class InitialInventory(
   locationId: UUID,
-  quantity: Float,
+  qty: Float,
+  unitCost: Double,
   uomUd: UUID,
   date: Instant,
-  partTracking: List[PartTrackingValue] = List.empty
+  partTrackingValue: List[PartTrackingValue] = List.empty
 )
 
 object InitialInventory {

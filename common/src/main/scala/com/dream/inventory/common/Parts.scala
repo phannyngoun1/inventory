@@ -54,17 +54,6 @@ case object PartTrackingType extends StringEnum[PartTrackingType] with StringPla
 
 }
 
-/*
-object PartTrackingType extends Enumeration {
-  type Type = Value
-  val TextType, DateType, NumberType = Value
-
-  implicit val format: Format[Type] = enumFormat(PartTrackingType)
-}
-*/
-
-
-
 sealed trait PartTrackingValue {
 
   def toString: String
@@ -86,14 +75,6 @@ sealed abstract class AbstractPartTracking[T] extends PartTrackingValue{
 
 }
 
-
-//case class TrackingBySerial(override val value: String) extends AbstractPartTracking[String] {
-//  override val trackingType = PartTrackingType.Text
-//}
-//
-//object TrackingBySerial {
-//  implicit val format: Format[TrackingBySerial] = Json.format
-//}
 
 
 case class TrackingByExpiryDate(override val value: Instant) extends AbstractPartTracking[Instant] {

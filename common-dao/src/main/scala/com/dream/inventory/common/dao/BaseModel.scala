@@ -34,3 +34,5 @@ trait BaseModel {
   def recordStatus: RecordStatus
 
 }
+
+
