@@ -5,21 +5,21 @@ import java.util.UUID
 import akka.NotUsed
 import com.datastax.driver.core.utils.UUIDs
 import com.dream.inventory.common.PartType
+import com.dream.inventory.common.dao.AuditData
 import com.dream.inventory.security.ServerSecurity._
-import com.dream.inventory.validate.Validation
 import com.dream.materials._
 import com.dream.materials.api.part.{CreatePartRequest, PartBasicInfo, PartService}
 import com.dream.materials.impl.MaterialServiceImpl
 import com.lightbend.lagom.scaladsl.api.ServiceCall
-import com.lightbend.lagom.scaladsl.api.transport.{BadRequest, Forbidden, NotFound}
+import com.lightbend.lagom.scaladsl.api.transport.{Forbidden, NotFound}
 import com.lightbend.lagom.scaladsl.server.ServerServiceCall
-import PartValidation._
-import com.dream.inventory.common.dao.AuditData
+import com.dream.inventory.validate.Validation.Validator.ops._
 
 import scala.concurrent.Future
 
-trait PartServiceImpl extends PartService with Validation {
+trait PartServiceImpl extends PartService with PartValidation{
   this: MaterialServiceImpl =>
+
 
   override def createPart = authenticated(userId => ServerServiceCall { part =>
 
@@ -41,9 +41,6 @@ trait PartServiceImpl extends PartService with Validation {
       )
     )
 
-    //    validateRequest(pPart).fold()
-
-
     val createPartRequest = CreatePartRequest(
       partBasicInfo = PartBasicInfo(
         partNr = "aa",
@@ -53,7 +50,9 @@ trait PartServiceImpl extends PartService with Validation {
       )
     )
 
-   validate(createPartRequest).fold(error => throw BadRequest("validation check"), fa => print(fa.partBasicInfo.partNr))
+
+
+    //validate(createPartRequest).fold(error => throw BadRequest("validation check"), fa => print(fa.partBasicInfo.partNr))
     Future.successful(part)
   })
 

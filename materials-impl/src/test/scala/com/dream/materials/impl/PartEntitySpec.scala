@@ -41,8 +41,7 @@ class PartEntitySpec extends WordSpec with Matchers with BeforeAndAfterAll with 
   "The part entity" should {
     "allow creating an part" in withDriver { driver =>
 
-      val partData = PartDataModel.create(partId, partBasicInfo = partBasicInfo)
-
+      val partData = PartDataModel.create(partId, partBasicInfo = partBasicInfo).toObjOrThrow
       val outcome = driver.run(CreatePart(partData))
       outcome.events should contain only PartCreated(partData)
       outcome.state should ===(Some(partData))

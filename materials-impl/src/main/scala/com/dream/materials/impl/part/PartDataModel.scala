@@ -13,6 +13,7 @@ import com.lightbend.lagom.scaladsl.persistence.PersistentEntity.ReplyType
 import com.lightbend.lagom.scaladsl.persistence.{AggregateEvent, AggregateEventTag, AggregateEventTagger}
 import play.api.libs.json.{Format, Json}
 
+
 /** *************************Data *****************************/
 
 case class PartDefaultLocationDataModel(
@@ -212,16 +213,18 @@ case class PartDataModel(
     Right(copy(trackingMethod = partTrackingMethods.map(t => PartTrackingMethodDataModel(t.partTrackingType, t.nextValue, t.isPrimary))))
   }
 
-  def withInitialInventory(pInventory: InitialInventory): Either[PartError, PartDataModel] = {
+  def withInitialInventory(pInventory: Option[InitialInventory]): Either[PartError, PartDataModel] = {
 
-    if (!inventory.isEmpty)
+    if(pInventory.isDefined)
+      Right(copy())
+    else if (!inventory.isEmpty)
       Left(DefaultPartError("Inventory is already initial"))
     else {
       Right(copy(inventory = inventory.map(_.receiving(
-      pInventory.qty,
-      unitCost = pInventory.unitCost,
-      date = pInventory.date,
-      partTracking = List(PartTrackingDataModel(pInventory.locationId, pInventory.qty, pInventory.partTrackingValue)),
+      pInventory.get.qty,
+      unitCost = pInventory.get.unitCost,
+      date = pInventory.get.date,
+      partTracking = List(PartTrackingDataModel(pInventory.get.locationId, pInventory.get.qty, pInventory.get.partTrackingValue)),
       { _ => true }
       ))))
     }
@@ -247,7 +250,12 @@ object PartDataModel {
     defaultLocation: List[UUID] = List.empty,
     defaultVendor: Option[DefaultVendor] = None,
     defaultAccount: Option[DefaultAccount] = None
-  ): PartDataModel = {
+  ): Either[PartError, PartDataModel]  = {
+
+    import cats.Monad
+    import cats.instances.either._
+
+
     val part = PartDataModel(
       id = id,
       partNr = partBasicInfo.partNr,
@@ -261,17 +269,21 @@ object PartDataModel {
       )
     )
 
-    part.withTrackingMethod(partTrackingMethods).toObjOrThrow
-      .whenDefined(initialInventory)((init, part) =>  part.withInitialInventory(init).toObjOrThrow)
-      .whenDefined(defaultAccount)( (_, part) => part.copy(accounts = defaultAccount.map(f =>
-        PartAcctDataModel(
-          assetAccountId = f.adjustmentAcctId,
-          cosgsAccountId = f.cogsAcctId,
-          adjustmentAccountId =  f.adjustmentAcctId,
-          scrapAccountId = f.scrapAcctId)))
-      )
-      .
 
+    Right(part)
+      .map(_.withTrackingMethod(partTrackingMethods).toObjOrThrow)
+      .map(_.withInitialInventory(initialInventory).toObjOrThrow)
+
+
+//    part.withTrackingMethod(partTrackingMethods).toObjOrThrow
+//      .whenDefined(initialInventory)((init, part) =>  part.withInitialInventory(init).toObjOrThrow)
+//      .whenDefined(defaultAccount)((_, part) => part.copy(accounts = defaultAccount.map(f =>
+//        PartAcctDataModel(
+//          assetAccountId = f.adjustmentAcctId,
+//          cosgsAccountId = f.cogsAcctId,
+//          adjustmentAccountId =  f.adjustmentAcctId,
+//          scrapAccountId = f.scrapAcctId)))
+//      )
   }
 }
 

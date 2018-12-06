@@ -13,6 +13,7 @@ version in ThisBuild := "1.0-SNAPSHOT"
 
 // the Scala version that will be used for cross-compiled libraries
 scalaVersion in ThisBuild := "2.12.4"
+addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full)
 
 val playJsonDerivedCodecs = "org.julienrf" %% "play-json-derived-codecs" % "4.0.0"
 val scalaTestPlusPlay = "org.scalatestplus.play" %% "scalatestplus-play" % "3.1.2" % Test
@@ -23,9 +24,13 @@ val mysqlConnectJava = "mysql" % "mysql-connector-java" % "5.1.42"
 val cats = "org.typelevel" %% "cats-core" % "1.4.0"
 val enumeratum = "com.beachape" %% "enumeratum" % "1.5.13"
 val enumeratumPlay = "com.beachape" %% "enumeratum-play-json" % "1.5.14"
+val simulacrum = "com.github.mpilquist" %% "simulacrum" % "0.14.0"
 
 def commonSettings: Seq[Setting[_]] = Seq(
 
+    libraryDependencies ++=  Seq(
+      simulacrum
+    )
 )
 
 lazy val security = (project in file("security"))
