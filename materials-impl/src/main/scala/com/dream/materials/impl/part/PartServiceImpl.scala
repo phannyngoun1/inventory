@@ -11,7 +11,7 @@ import com.dream.materials._
 import com.dream.materials.api.part.{CreatePartRequest, PartBasicInfo, PartService}
 import com.dream.materials.impl.MaterialServiceImpl
 import com.lightbend.lagom.scaladsl.api.ServiceCall
-import com.lightbend.lagom.scaladsl.api.transport.{Forbidden, NotFound}
+import com.lightbend.lagom.scaladsl.api.transport.{BadRequest, Forbidden, NotFound}
 import com.lightbend.lagom.scaladsl.server.ServerServiceCall
 import com.dream.inventory.validate.Validation.Validator.ops._
 
@@ -31,13 +31,12 @@ trait PartServiceImpl extends PartService with PartValidation{
     val partId = UUIDs.timeBased()
     val pPart = PartDataModel(
       id = partId,
-
       partNr = part.partNr,
       description = part.description,
       partType = part.partType,
       auditData = AuditData(
         creator = part.creator,
-        modifiedBy = part.creator
+        modifiedBy = Some(part.creator)
       )
     )
 
@@ -50,9 +49,8 @@ trait PartServiceImpl extends PartService with PartValidation{
       )
     )
 
+    createPartRequest.validate.fold(errors => throw BadRequest(errors.map(_.message).toList.mkString(", ")), fa => print(fa.partBasicInfo.partNr))
 
-
-    //validate(createPartRequest).fold(error => throw BadRequest("validation check"), fa => print(fa.partBasicInfo.partNr))
     Future.successful(part)
   })
 

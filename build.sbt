@@ -2,18 +2,20 @@
 lazy val `inventory` = (project in file("."))
   .aggregate(
     `user-api`, `user-impl`,
-    `setting-api`,`setting-impl`,
+    `setting-api`, `setting-impl`,
     `materials-api`, `materials-impl`,
     `web-gateway`
   )
   .settings(commonSettings: _*)
+
 
 organization in ThisBuild := "com.dream"
 version in ThisBuild := "1.0-SNAPSHOT"
 
 // the Scala version that will be used for cross-compiled libraries
 scalaVersion in ThisBuild := "2.12.4"
-addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full)
+
+autoCompilerPlugins := true
 
 val playJsonDerivedCodecs = "org.julienrf" %% "play-json-derived-codecs" % "4.0.0"
 val scalaTestPlusPlay = "org.scalatestplus.play" %% "scalatestplus-play" % "3.1.2" % Test
@@ -27,10 +29,10 @@ val enumeratumPlay = "com.beachape" %% "enumeratum-play-json" % "1.5.14"
 val simulacrum = "com.github.mpilquist" %% "simulacrum" % "0.14.0"
 
 def commonSettings: Seq[Setting[_]] = Seq(
-
-    libraryDependencies ++=  Seq(
-      simulacrum
-    )
+  addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full),
+  libraryDependencies ++= Seq(
+    simulacrum
+  )
 )
 
 lazy val security = (project in file("security"))
@@ -58,6 +60,7 @@ lazy val common = (project in file("common"))
       playJsonDerivedCodecs
     )
   )
+
 
 lazy val `common-dao` = (project in file("common-dao"))
   .settings(commonSettings: _*)
@@ -111,7 +114,7 @@ lazy val `setting-impl` = (project in file("setting-impl"))
     )
   )
   .settings(lagomForkedTestSettings: _*)
-  .dependsOn(`setting-api`,common ,  `common-dao`)
+  .dependsOn(`setting-api`, common, `common-dao`)
 
 /*
 lazy val `billing-api` = (project in file("billing-api"))
@@ -234,7 +237,7 @@ lazy val `materials-impl` = (project in file("materials-impl"))
     )
   )
   .settings(lagomForkedTestSettings: _*)
-  .dependsOn( `materials-api`, `common-dao`)
+  .dependsOn(`materials-api`, `common-dao`)
 
 
 lazy val `web-gateway` = (project in file("web-gateway"))

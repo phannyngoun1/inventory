@@ -5,6 +5,7 @@ import java.util.UUID
 import akka.NotUsed
 import com.dream.inventory.api
 import com.dream.inventory.api.uom.UoMService
+import com.dream.inventory.common.dao.{AuditData, RecordStatus}
 import com.dream.inventory.security.ServerSecurity.authenticated
 import com.dream.inventory.setting.impl.SettingServiceImpl
 import com.dream.inventory.utils.PagingState
@@ -23,8 +24,8 @@ trait UoMServiceImpl extends UoMService { this: SettingServiceImpl =>
       abbr = uom.abbr,
       measurementType = uom.measurementType,
       description = uom.description,
-      creator = uom.creator,
-      modifiedBy = uom.modifiedBy
+      auditData = AuditData(creator = uom.creator),
+      recordStatus = RecordStatus()
     )
 
     entityRef(uomP.id).ask(CreateUoM(uomP)).map { _ =>
@@ -51,8 +52,8 @@ trait UoMServiceImpl extends UoMService { this: SettingServiceImpl =>
     abbr = uoM.abbr,
     measurementType = uoM.measurementType,
     description = uoM.description,
-    creator = uoM.creator,
-    modifiedBy = uoM.modifiedBy
+    creator = uoM.auditData.creator,
+    modifiedBy = uoM.auditData.modifiedBy
 
   )
 

@@ -5,7 +5,7 @@ import java.util.UUID
 
 import akka.Done
 import com.dream.inventory.common.MeasurementType
-import com.dream.inventory.common.dao.BaseModel
+import com.dream.inventory.common.dao.{AuditData, BaseModel, RecordStatus}
 import com.dream.inventory.utils.JsonFormats.singletonFormat
 import com.lightbend.lagom.scaladsl.persistence.PersistentEntity.ReplyType
 import com.lightbend.lagom.scaladsl.persistence.{AggregateEvent, AggregateEventTag, AggregateEventTagger, PersistentEntity}
@@ -38,8 +38,8 @@ class UoMEntity extends PersistentEntity {
           abbr = uoM.abbr,
           measurementType = uoM.measurementType,
           description = uoM.description,
-          creator = uoM.creator,
-          modifiedBy = uoM.creator
+          auditData = uoM.auditData,
+          recordStatus = uoM.recordStatus
         )))(_ => ctx.reply(Done))
     }.onEvent {
       case (UoMCreated(uoM), _) => Some(uoM)
@@ -97,6 +97,7 @@ trait UoMDataModel extends BaseModel {
 }
 
 object UoMDataModel {
+
   implicit val format: Format[UoMDataModel] = Json.format
 
   def apply(
@@ -105,12 +106,12 @@ object UoMDataModel {
     abbr: String,
     measurementType: MeasurementType,
     description: String,
-    creator: UUID,
-    modifiedBy: UUID
-  ): UoMDataModel = new UoMImpl(id, code, abbr, measurementType, description, creator, modifiedBy)
+    auditData: AuditData,
+    recordStatus: RecordStatus
+  ): UoMDataModel = new UoMImpl(id, code, abbr, measurementType, description, auditData, recordStatus)
 
-  def unapply(self: UoMDataModel): Option[(UUID, String, String, MeasurementType, String, UUID, UUID)] =
-    Some((self.id, self.code, self.abbr, self.measurementType, self.description, self.creator, self.modifiedBy))
+  def unapply(self: UoMDataModel): Option[(UUID, String, String, MeasurementType, String, AuditData, RecordStatus)] =
+    Some((self.id, self.code, self.abbr, self.measurementType, self.description, self.auditData, self.recordStatus))
 
   case class UoMImpl(
     override val id: UUID,
@@ -118,26 +119,17 @@ object UoMDataModel {
     override val abbr: String,
     override val measurementType: MeasurementType,
     override val description: String,
-    override val creator: UUID,
-    override val modifiedBy: UUID,
-    override val createdAt: Instant = Instant.now(),
-    override val modifiedAt: Option[Instant] = None,
-    override val isActive: Boolean = false,
-    override val isDeleted: Boolean = false
+    override val auditData: AuditData,
+    override val recordStatus: RecordStatus
   ) extends UoMDataModel {
 
-    override def delete(uoMDeleted: UoMDeleted): Either[UoMError, UoMDataModel] = Right(copy(isDeleted = true, modifiedBy = uoMDeleted.modifiedBy))
+    override def delete(uoMDeleted: UoMDeleted): Either[UoMError, UoMDataModel] = Right(copy())
 
-    override def disable(uoMDisabled: UoMDisabled): Either[UoMError, UoMDataModel] = Right(copy(isActive = false, modifiedBy = uoMDisabled.modifiedBy))
+    override def disable(uoMDisabled: UoMDisabled): Either[UoMError, UoMDataModel] = Right(copy())
 
-    override def enable(uoMActive: UoMActive): Either[UoMError, UoMDataModel] = Right(copy(isActive = true, modifiedBy = uoMActive.modifiedBy))
+    override def enable(uoMActive: UoMActive): Either[UoMError, UoMDataModel] = Right(copy())
 
-    override def update(uoMUpdated: UoMUpdated): Either[UoMError, UoMDataModel] = Right(copy(
-      code = uoMUpdated.code,
-      abbr = uoMUpdated.abbr,
-      measurementType = uoMUpdated.measurementType,
-      modifiedBy = uoMUpdated.modifiedBy
-    ))
+    override def update(uoMUpdated: UoMUpdated): Either[UoMError, UoMDataModel] = Right(copy())
   }
 
 }

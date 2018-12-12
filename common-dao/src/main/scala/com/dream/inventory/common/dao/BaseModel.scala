@@ -7,7 +7,7 @@ import play.api.libs.json.{Format, Json}
 
 case class AuditData(
   creator: UUID,
-  modifiedBy: UUID,
+  modifiedBy: Option[UUID] = None,
   createdAt: Instant = Instant.now(),
   modifiedAt: Option[Instant] = None
 )

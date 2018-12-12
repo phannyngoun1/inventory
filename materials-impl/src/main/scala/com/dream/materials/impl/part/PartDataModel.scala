@@ -100,43 +100,43 @@ case class InventoryDataModel(
       availableToPick = availableToPick + qty,
       totalAvgCost = totalAvgCost + (qty * unitCost),
       avgCost = (totalAvgCost + (qty * unitCost)) / (onHand + qty),
-      costingLayers = CostLayerDataModel(date, qty, unitCost, qty * unitCost) :: costingLayers,
-      partTracking = addToTracking(partTracking)
+      costingLayers = CostLayerDataModel(date, qty, unitCost, qty * unitCost) :: costingLayers
+      //partTracking = addToTracking(partTracking)
     )
   }
 
-  private def addToTracking(newPartTracking: List[PartTrackingDataModel]): List[PartTrackingDataModel] = {
+//  private def addToTracking(newPartTracking: List[PartTrackingDataModel]): List[PartTrackingDataModel] = {
+//
+//    val all = List.concat(partTracking, newPartTracking)
+//
+//    List.concat(
+//      all.filter(_.trackingTrackingValues.exists(_.trackingType == PartTrackingType.SerialNumber))
+//        .groupBy(f => (f.locationId, f.trackingTrackingValues.filter(_.trackingType != PartTrackingType.SerialNumber).sorted))
+//        .map(m => PartTrackingDataModel(
+//          locationId = m._1._1,
+//          qty = m._2.reduce(_.qty + _.qty),
+//          trackingTrackingValues = mergeSerialTrackingValues(m._2.map(_.trackingTrackingValues.filter(_.trackingType != PartTrackingType.SerialNumber)).reduce(List.concat(_, _))) :: m._1._2
+//        )).toList,
+//      all.filter(_.trackingTrackingValues.exists(_.trackingType != PartTrackingType.SerialNumber))
+//        .groupBy(f => (f.locationId, f.trackingTrackingValues.sorted))
+//        .map(m => PartTrackingDataModel(
+//          locationId = m._1._1,
+//          qty = m._2.reduce(_.qty + _.qty),
+//          trackingTrackingValues = m._1._2
+//        )).toList
+//    )
+//  }
 
-    val all = List.concat(partTracking, newPartTracking)
-
-    List.concat(
-      all.filter(_.trackingTrackingValues.exists(_.trackingType == PartTrackingType.SerialNumber))
-        .groupBy(f => (f.locationId, f.trackingTrackingValues.filter(_.trackingType != PartTrackingType.SerialNumber).sorted))
-        .map(m => PartTrackingDataModel(
-          locationId = m._1._1,
-          qty = m._2.reduce(_.qty + _.qty),
-          trackingTrackingValues = mergeSerialTrackingValues(m._2.map(_.trackingTrackingValues.filter(_.trackingType != PartTrackingType.SerialNumber)).reduce(List.concat(_, _))) :: m._1._2
-        )).toList,
-      all.filter(_.trackingTrackingValues.exists(_.trackingType != PartTrackingType.SerialNumber))
-        .groupBy(f => (f.locationId, f.trackingTrackingValues.sorted))
-        .map(m => PartTrackingDataModel(
-          locationId = m._1._1,
-          qty = m._2.reduce(_.qty + _.qty),
-          trackingTrackingValues = m._1._2
-        )).toList
-    )
-  }
-
-  private def mergeSerialTrackingValues(values: List[PartTrackingValue]): PartTrackingValue = {
-
-    TrackingBySerials(
-      values.map {
-        _ match {
-          case v: TrackingBySerials => v.value
-        }
-      }.reduce(List.concat(_, _))
-    )
-  }
+//  private def mergeSerialTrackingValues(values: List[PartTrackingValue]): PartTrackingValue = {
+//
+//    TrackingBySerials(
+//      values.map {
+//        _ match {
+//          case v: TrackingBySerials => v.value
+//        }
+//      }.reduce(List.concat(_, _))
+//    )
+//  }
 }
 
 object InventoryDataModel {
@@ -213,21 +213,15 @@ case class PartDataModel(
     Right(copy(trackingMethod = partTrackingMethods.map(t => PartTrackingMethodDataModel(t.partTrackingType, t.nextValue, t.isPrimary))))
   }
 
-  def withInitialInventory(pInventory: Option[InitialInventory]): Either[PartError, PartDataModel] = {
+  def withInitialInventory(pInventory: InitialInventory): Either[PartError, PartDataModel] = {
 
-    if(pInventory.isDefined)
-      Right(copy())
-    else if (!inventory.isEmpty)
-      Left(DefaultPartError("Inventory is already initial"))
-    else {
       Right(copy(inventory = inventory.map(_.receiving(
-      pInventory.get.qty,
-      unitCost = pInventory.get.unitCost,
-      date = pInventory.get.date,
-      partTracking = List(PartTrackingDataModel(pInventory.get.locationId, pInventory.get.qty, pInventory.get.partTrackingValue)),
+      pInventory.qty,
+      unitCost = pInventory.unitCost,
+      date = pInventory.date,
+      partTracking = List(PartTrackingDataModel(pInventory.locationId, pInventory.qty, pInventory.partTrackingValue)),
       { _ => true }
       ))))
-    }
   }
 
   def disable: Either[PartError, PartDataModel] = Right(copy(
@@ -265,14 +259,14 @@ object PartDataModel {
       uomId = partBasicInfo.uomId,
       auditData = AuditData(
         creator = partBasicInfo.creator,
-        modifiedBy = partBasicInfo.creator
+        modifiedBy = None
       )
     )
 
 
     Right(part)
       .map(_.withTrackingMethod(partTrackingMethods).toObjOrThrow)
-      .map(_.withInitialInventory(initialInventory).toObjOrThrow)
+      .map(_.withInitialInventory(initialInventory.get).toObjOrThrow)
 
 
 //    part.withTrackingMethod(partTrackingMethods).toObjOrThrow

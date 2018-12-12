@@ -6,7 +6,7 @@ import java.util.UUID
 trait BaseObject extends ObjectIdentity {
   def creator: UUID
 
-  def modifiedBy: UUID
+  def modifiedBy: Option[UUID]
 
   def createdAt: Option[Instant]
 

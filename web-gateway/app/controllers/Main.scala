@@ -11,7 +11,7 @@ class Main(userService: UserService, controllerComponents: ControllerComponents)
 
 
 
-  def index1 = Action.async { implicit rh =>
+  def index = Action.async { implicit rh =>
 
     requireUser(userId => for {
       users <- userService.getUsers.invoke()

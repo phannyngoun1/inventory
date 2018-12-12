@@ -13,7 +13,7 @@ case class UoM (
   measurementType : MeasurementType,
   description     : String,
   creator         : UUID,
-  modifiedBy      : UUID,
+  modifiedBy      : Option[UUID],
   createdAt       : Option[Instant] = None,
   modifiedAt      : Option[Instant] = None
 ) extends BaseObject {
@@ -29,7 +29,7 @@ object UoM {
     measurementType : MeasurementType,
     description     : String,
     creator         : UUID,
-    modifiedBy      : UUID
+    modifiedBy      : Option[UUID]
   ) = UoM(
     id              = None,
     code            = code,

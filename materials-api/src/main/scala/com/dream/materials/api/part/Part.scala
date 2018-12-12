@@ -12,7 +12,7 @@ case class Part(
   description: String,
   partType: PartType,
   creator: UUID,
-  modifiedBy: UUID,
+  modifiedBy: Option[UUID],
   createdAt: Option[Instant],
   modifiedAt: Option[Instant]
 ) extends BaseObject {
@@ -28,7 +28,7 @@ object Part {
     partNr: String,
     description: String,
     partType: PartType,
-  ) = Part(None, partNr, description, partType, creator,creator, None, None )
+  ) = Part(None, partNr, description, partType, creator,None, None, None )
 }
 
 

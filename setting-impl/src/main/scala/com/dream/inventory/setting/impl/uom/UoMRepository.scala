@@ -27,8 +27,8 @@ private[impl] class UoMRepository(val profile: JdbcProfile, val db: JdbcProfile#
     abbr = eventElement.event.uom.abbr,
     measurementType = eventElement.event.uom.measurementType.toString,
     description = eventElement.event.uom.description,
-    creator = eventElement.event.uom.creator.toString,
-    modifiedBy = eventElement.event.uom.modifiedBy.toString
+    creator = eventElement.event.uom.auditData.creator.toString,
+    modifiedBy = eventElement.event.uom.auditData.modifiedBy.toString
   ))
 
   def processUoMUpdated(eventElement: EventStreamElement[UoMUpdated]) = UoMDao.update(eventElement.entityId)(eventElement.event)

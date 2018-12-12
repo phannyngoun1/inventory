@@ -1,12 +1,8 @@
 package com.dream.inventory.validate
 
 import cats.data.ValidatedNel
-import simulacrum._
 import cats.syntax.validated._
-import com.dream.inventory.validate.Validation.ValidationResult
-
-import scala.language.implicitConversions
-
+import simulacrum._
 
 object TypeValidator {
 
@@ -22,6 +18,7 @@ object Validation {
     val message: String
     val cause: Option[Throwable]
   }
+
   case class RequiredError(message: String, cause: Option[Throwable] = None) extends Error
 
   def validateNotEmptyString(key: String, value: String): ValidationResult[String] = {
@@ -32,25 +29,23 @@ object Validation {
   }
 
 
-  def validateMandatory[A](key: String, value: A)(implicit f: A => Boolean) : ValidationResult[A] = {
-    if(f(value))
+  def validateMandatory[A](key: String, value: A)(implicit f: A => Boolean): ValidationResult[A] = {
+    if (f(value))
       value.validNel
     else
-      RequiredError( s"$key is empty").invalidNel
+      RequiredError(s"$key is empty").invalidNel
   }
 
 
   @typeclass trait Validator[A] {
-    def validate(a: A) : ValidationResult[A]
+    def validate(a: A): ValidationResult[A]
   }
 
-  object Validator{
-    def doValidate[A](f:A => ValidationResult[A]): Validator[A] = new Validator[A] {
+  object Validator {
+    def doValidate[A](f: A => ValidationResult[A]): Validator[A] = new Validator[A] {
       override def validate(a: A): ValidationResult[A] = f(a)
     }
   }
-
-
 
 }
 
