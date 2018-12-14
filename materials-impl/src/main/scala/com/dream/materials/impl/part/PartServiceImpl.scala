@@ -8,7 +8,7 @@ import com.dream.inventory.common.PartType
 import com.dream.inventory.common.dao.AuditData
 import com.dream.inventory.security.ServerSecurity._
 import com.dream.materials._
-import com.dream.materials.api.part.{CreatePartRequest, PartBasicInfo, PartService}
+import com.dream.materials.api.part.{CreatePartRequest, Part, PartBasicInfo, PartService}
 import com.dream.materials.impl.MaterialServiceImpl
 import com.lightbend.lagom.scaladsl.api.ServiceCall
 import com.lightbend.lagom.scaladsl.api.transport.{BadRequest, Forbidden, NotFound}
@@ -49,9 +49,9 @@ trait PartServiceImpl extends PartService with PartValidation{
       )
     )
 
-    createPartRequest.validate.fold(errors => throw BadRequest(errors.map(_.message).toList.mkString(", ")), fa => print(fa.partBasicInfo.partNr))
+    val result: Part = createPartRequest.validate.fold(errors => throw BadRequest(errors.map(_.message).toList.mkString(", ")), fa => part)
 
-    Future.successful(part)
+    Future.successful(result)
   })
 
   override def getPart(uUID: UUID): ServiceCall[NotUsed, api.part.Part] = authenticated(_ => ServerServiceCall { _ => {

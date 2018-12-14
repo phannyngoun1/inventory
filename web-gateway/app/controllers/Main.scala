@@ -9,8 +9,6 @@ class Main(userService: UserService, controllerComponents: ControllerComponents)
   (implicit ec: ExecutionContext)
   extends AbstractAuctionController(controllerComponents) {
 
-
-
   def index = Action.async { implicit rh =>
 
     requireUser(userId => for {
@@ -21,5 +19,4 @@ class Main(userService: UserService, controllerComponents: ControllerComponents)
       case _ => BadRequest("Oops")
     }
   }
-
 }

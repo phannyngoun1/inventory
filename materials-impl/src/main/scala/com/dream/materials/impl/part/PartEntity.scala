@@ -12,8 +12,6 @@ object PartEntity {
 
 class PartEntity extends PersistentEntity {
 
-  import com.dream.inventory.common.Decorator._
-
   override type Command = PartCommand
   override type Event = PartEvent
   override type State = Option[PartDataModel]
